@@ -16,7 +16,7 @@ jobs:
       - name: Download Godot 4.2.2
         run: |
           mkdir -p godot
-          wget -q https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_linux.x86_64.zip -O godot/godot.zip
+          wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip -O godot/godot.zip
           unzip godot/godot.zip -d godot
           chmod +x godot/Godot_v4.2.2-stable_linux.x86_64
 
