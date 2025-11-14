@@ -1,0 +1,35 @@
+name: Build HTML5 Export
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Download Godot 4.2.2
+      run: |
+        mkdir -p godot
+        wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/mono/Godot_v4.2.2-stable_linux.x86_64.zip -O godot/godot.zip
+        unzip godot/godot.zip -d godot
+        chmod +x godot/Godot_v4.2.2-stable_linux.x86_64
+
+    - name: Export HTML5
+      run: |
+        mkdir -p build/html5
+        godot/Godot_v4.2.2-stable_linux.x86_64 \
+          --headless \
+          --path . \
+          --export "HTML5" build/html5/index.html
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: html5-build
+        path: build/html5
