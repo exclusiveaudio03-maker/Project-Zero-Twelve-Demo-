@@ -34,3 +34,13 @@ jobs:
       with:
         name: html5-build
         path: build/html5
+        godot/Godot_v4.2.2-stable_linux.x86_64 \
+          --headless \
+          --path . \
+          --export-release "HTML5" build/html5/index.html
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: html5-build
+        path: build/html5
