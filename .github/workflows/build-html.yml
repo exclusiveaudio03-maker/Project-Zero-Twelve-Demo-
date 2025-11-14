@@ -8,28 +8,57 @@ on:
 jobs:
   export:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Download Godot 4.2.2
-      run: |
-        mkdir -p godot
-        wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip -O godot/godot.zip
-        unzip godot/godot.zip -d godot
-        chmod +x godot/Godot_v4.2.2-stable_linux.x86_64
+      - name: Use firebelley godot-export action (setup Godot)
+        # use the v5 series for Godot 4 (change to a specific tag if you want)
+        uses: firebelley/godot-export@v5
 
-    - name: Export HTML5
-      run: |
-        mkdir -p export/html5
-        ./godot/Godot_v4.2.2-stable_linux.x86_64 \
-          --headless \
-          --path . \
-          --export-release "HTML5" export/html5/index.html
+        with:
+          godot-version: '4.2.2'       # target Godot engine version
+          export-preset: 'HTML5'       # must match your export preset name in export_presets.cfg
+          cache: true
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: html5-build
-        path: export/html5
+      - name: Debug - list files (repo root)
+        run: |
+          echo "Workspace root:"
+          pwd
+          ls -la
+
+      - name: Locate godot binary (debug)
+        run: |
+          echo "Searching for Godot binary..."
+          find . -type f -name "Godot_*" -maxdepth 6 -print || true
+          # if the action provides 'godot' on PATH this will be a no-op
+
+      - name: Export HTML5 with discovered binary (robust)
+        run: |
+          # Create output dir that we'll tell Vercel about
+          OUTDIR=export/html5
+          mkdir -p "$OUTDIR"
+
+          # Try to find an available Godot binary produced by the action:
+          GODOT_BIN=$(find . -type f -name "Godot_*" -o -name "godot" | head -n 1)
+          echo "GODOT_BIN: $GODOT_BIN"
+          if [ -z "$GODOT_BIN" ]; then
+            echo "No Godot binary found in workspace. Trying 'godot' on PATH..."
+            GODOT_BIN=godot
+          fi
+
+          # Show version
+          "$GODOT_BIN" --version || true
+
+          # Run the headless export. Replace "HTML5" if you use a different preset name.
+          "$GODOT_BIN" --headless --path . --export "HTML5" "$OUTDIR/index.html"
+
+          # List output so we can debug in Actions logs
+          ls -la "$OUTDIR" || true
+        shell: bash
+
+      - name: Upload HTML5 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html5-build
+          path: export/html5
