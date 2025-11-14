@@ -29,7 +29,7 @@ jobs:
           --export "HTML5" build/html5/index.html
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: html5-build
         path: build/html5
