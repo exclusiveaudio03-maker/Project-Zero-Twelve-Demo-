@@ -8,27 +8,49 @@ on:
 jobs:
   export:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Godot 4.2.2
+      - name: Prepare directories
         run: |
           mkdir -p godot
-          wget -q https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip -O godot/godot.zip
-          unzip godot/godot.zip -d godot
-          chmod +x godot/Godot_v4.2.2-stable_linux.x86_64
+          mkdir -p build/html5
+
+      - name: Download Godot 4.2.2 (editor binary)
+        run: |
+          # Download editor binary zip to godot/godot.zip
+          wget -q -O godot/godot.zip "https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip"
+          unzip -q godot/godot.zip -d godot
+          # Find extracted binary (name may vary slightly). Make executable:
+          # The extracted name is commonly: Godot_v4.2.2-stable_linux.x86_64
+          chmod +x godot/Godot_v4.2.2-stable_linux.x86_64 || true
+          ls -la godot
+
+      - name: Download Godot 4.2.2 export templates
+        run: |
+          # Download export templates (the templates file extension can be .tpz or .zip depending on host)
+          wget -q -O godot/templates.tpz "https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_export_templates.tpz"
+          # Create Godot templates folder where Godot looks for them on Linux
+          mkdir -p ~/.local/share/godot/templates/4.2.2
+          # Extract templates into the templates directory
+          unzip -q godot/templates.tpz -d ~/.local/share/godot/templates/4.2.2 || true
+          # Show resulting files
+          ls -la ~/.local/share/godot/templates/4.2.2 || true
 
       - name: Export HTML5
         run: |
-          mkdir -p build/html5
-          godot/Godot_v4.2.2-stable_linux.x86_64 \
-            --headless \
-            --path . \
-            --export-release "HTML5" build/html5/index.html
+          # Export using the editor in headless mode. Make sure export preset name matches your export_presets.cfg (e.g. "HTML5")
+          ./godot/Godot_v4.2.2-stable_linux.x86_64 --headless --path . --export "HTML5" build/html5/index.html
+        env:
+          HOME: ${{ runner.home }}
 
-      - name: Upload Artifact
+      - name: Show exported files
+        run: |
+          echo "Build folder contents:"
+          ls -la build/html5 || true
+
+      - name: Upload HTML5 artifact
         uses: actions/upload-artifact@v4
         with:
           name: html5-build
