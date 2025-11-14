@@ -11,54 +11,45 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Use firebelley godot-export action (setup Godot)
-        # use the v5 series for Godot 4 (change to a specific tag if you want)
-        uses: firebelley/godot-export@v5
-
         with:
-          godot-version: '4.2.2'       # target Godot engine version
-          export-preset: 'HTML5'       # must match your export preset name in export_presets.cfg
-          cache: true
+          fetch-depth: 0
 
-      - name: Debug - list files (repo root)
+      - name: Download Godot 4.2.2 (Linux)
         run: |
-          echo "Workspace root:"
-          pwd
-          ls -la
-
-      - name: Locate godot binary (debug)
-        run: |
-          echo "Searching for Godot binary..."
-          find . -type f -name "Godot_*" -maxdepth 6 -print || true
-          # if the action provides 'godot' on PATH this will be a no-op
-
-      - name: Export HTML5 with discovered binary (robust)
-        run: |
-          # Create output dir that we'll tell Vercel about
-          OUTDIR=export/html5
-          mkdir -p "$OUTDIR"
-
-          # Try to find an available Godot binary produced by the action:
-          GODOT_BIN=$(find . -type f -name "Godot_*" -o -name "godot" | head -n 1)
-          echo "GODOT_BIN: $GODOT_BIN"
-          if [ -z "$GODOT_BIN" ]; then
-            echo "No Godot binary found in workspace. Trying 'godot' on PATH..."
-            GODOT_BIN=godot
+          # create folder
+          mkdir -p godot
+          cd godot
+          # download the official Godot 4.2.2 Linux 64 zip (adjust URL if needed)
+          wget -q -O godot.zip "https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          # find the extracted binary (commonly named like 'Godot_v4.2.2-stable_linux.x86_64')
+          BINARY=$(ls | grep -E '^Godot.*4\.2\.2.*x86_64' || true)
+          if [ -z "$BINARY" ]; then
+            echo "Could not find Godot binary after unzip; listing files:"
+            ls -la
+            exit 2
           fi
+          chmod +x "$BINARY"
+          # move binary to repository root folder for use below
+          mv "$BINARY" ../godot_binary
+          cd ..
 
-          # Show version
-          "$GODOT_BIN" --version || true
-
-          # Run the headless export. Replace "HTML5" if you use a different preset name.
-          "$GODOT_BIN" --headless --path . --export "HTML5" "$OUTDIR/index.html"
-
-          # List output so we can debug in Actions logs
-          ls -la "$OUTDIR" || true
-        shell: bash
+      - name: Export HTML5
+        run: |
+          # ensure output dir exists
+          mkdir -p build/html5
+          # run the Godot binary headless export
+          ./godot_binary --headless --path . --export "HTML5" build/html5/index.html
+        env:
+          # If your project needs any extra env vars (none required usually)
+          CI: true
 
       - name: Upload HTML5 artifact
         uses: actions/upload-artifact@v4
         with:
           name: html5-build
-          path: export/html5
+          path: build/html5
+
+      - name: Post-checkout (optional cleanup)
+        run: |
+          echo "Done. build/html5 contains the exported files."
