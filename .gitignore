@@ -1,0 +1,11 @@
+# Godot 4.x
+.import/
+export_presets.cfg
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Backup
+*.tmp
+*.bak
